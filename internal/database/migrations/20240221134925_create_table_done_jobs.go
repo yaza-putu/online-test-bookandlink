@@ -1,7 +1,8 @@
 package migrations
 
 import (
-    "github.com/yaza-putu/online-test-bookandlink/internal/database"
+	"github.com/yaza-putu/online-test-bookandlink/internal/app/queue/entity"
+	"github.com/yaza-putu/online-test-bookandlink/internal/database"
 	"gorm.io/gorm"
 )
 
@@ -10,10 +11,10 @@ import (
 // It will change existing column’s type if its size, precision, nullable changed.
 // It WON’T delete unused columns to protect your data.
 
-func init()  {
+func init() {
 	database.MigrationRegister(func(db *gorm.DB) error {
-		return db.AutoMigrate(&EntityName{})
+		return db.AutoMigrate(&entity.DoneJob{})
 	}, func(db *gorm.DB) error {
-		return db.Migrator().DropTable(&EntityName{})
+		return db.Migrator().DropTable(&entity.DoneJob{})
 	})
 }

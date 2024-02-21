@@ -26,6 +26,16 @@ Project layout design influenced by [standard go project layout](https://github.
   note : don't forget copy key to .env and .env.test
 
 
+- run migration
+  ```bash
+  make migrate-up
+  ```
+
+- run data seeder
+  ```bash
+  make seed-up 
+  ```
+
 - run dev mode
   ```bash
     make run
@@ -40,6 +50,7 @@ Project layout design influenced by [standard go project layout](https://github.
    make gotest
   ```
 
+## Command Available
 - make migration
   ```bash
    make migration table="name_of_table"

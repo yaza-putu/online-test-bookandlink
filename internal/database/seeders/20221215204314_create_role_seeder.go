@@ -14,10 +14,6 @@ func init() {
 				ID:   entity.ADM,
 				Name: "adm",
 			},
-			entity.Role{
-				ID:   entity.USR,
-				Name: "usr",
-			},
 		}
 
 		return db.Create(&m).Error
