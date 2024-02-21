@@ -14,9 +14,9 @@ import (
 
 type (
 	Queue interface {
-		Add(ctx context.Context, jobs chan<- []string, wg *sync.WaitGroup, emails []string) // add job to queue
-		DispatchWorkers(jobs <-chan []string, wg *sync.WaitGroup)                           // dispatch worker
-		sendEmail(workerIndex int, email string)                                            // send email job
+		Add(ctx context.Context, jobs chan<- string, wg *sync.WaitGroup, email string) // add job to queue
+		DispatchWorkers(jobs <-chan string, wg *sync.WaitGroup)                        // dispatch worker
+		sendEmail(workerIndex int, email string)                                       // send email job
 	}
 	queueService struct {
 		totalWorker         int
@@ -67,30 +67,25 @@ func Mock(job repository.Job, doneJob repository.DoneJob, failedJob repository.F
 }
 
 // Add job to queue & send to worker
-func (q *queueService) Add(ctx context.Context, jobs chan<- []string, wg *sync.WaitGroup, emails []string) {
-	for _, email := range emails {
-		_, err := q.jobRepository.Add(ctx, entity.Job{
-			ID:      unique.Uid(13),
-			Name:    "Send email to " + email,
-			Payload: email,
-			Status:  entity.PENDING,
-		})
-		// send error to central logger handler
-		logger.New(err)
-	}
+func (q *queueService) Add(ctx context.Context, jobs chan<- string, wg *sync.WaitGroup, email string) {
+	_, err := q.jobRepository.Add(ctx, entity.Job{
+		ID:      unique.Uid(13),
+		Name:    "Send email to " + email,
+		Payload: email,
+		Status:  entity.PENDING,
+	})
+	// send error to central logger handler
+	logger.New(err)
 
-	jobs <- emails
+	jobs <- email
 	wg.Add(1)
-	close(jobs)
 }
 
-func (q *queueService) DispatchWorkers(jobs <-chan []string, wg *sync.WaitGroup) {
+func (q *queueService) DispatchWorkers(jobs <-chan string, wg *sync.WaitGroup) {
 	for workerIndex := 1; workerIndex <= q.totalWorker; workerIndex++ {
-		go func(workerIndex int, jobs <-chan []string, wg *sync.WaitGroup) {
+		go func(workerIndex int, jobs <-chan string, wg *sync.WaitGroup) {
 			for job := range jobs {
-				for _, v := range job {
-					q.sendEmail(workerIndex, v)
-				}
+				q.sendEmail(workerIndex, job)
 				wg.Done()
 			}
 		}(workerIndex, jobs, wg)

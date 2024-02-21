@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/yaza-putu/online-test-bookandlink/internal/app/queue/service"
+	"github.com/yaza-putu/online-test-bookandlink/internal/http/response"
 	"net/http"
 	"sync"
 )
@@ -20,19 +21,20 @@ func NewQueueHandler() *queueHandler {
 }
 
 func (q *queueHandler) Create(ctx echo.Context) error {
-	jobs := make(chan []string, 0)
+	jobs := make(chan string)
 	wg := new(sync.WaitGroup)
 
-	var emails []string
-
 	for i := 0; i < 100; i++ {
-		emails = append(emails, fmt.Sprintf("user%d@example.com", i+1))
+		email := fmt.Sprintf("user%d@example.com", i+1)
+		go q.queue.Add(context.Background(), jobs, wg, email)
 	}
 
-	go q.queue.Add(context.Background(), jobs, wg, emails)
 	go q.queue.DispatchWorkers(jobs, wg)
 
 	wg.Wait()
 
-	return ctx.JSON(http.StatusOK, "ok")
+	return ctx.JSON(http.StatusOK, response.Api(
+		response.SetCode(http.StatusOK),
+		response.SetMessage("Send to queue successfully")),
+	)
 }
