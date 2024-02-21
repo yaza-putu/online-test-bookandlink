@@ -2,7 +2,6 @@
 ![golang](https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Go_Logo_Blue.svg/1200px-Go_Logo_Blue.svg.png)
 
 Project layout design influenced by [standard go project layout](https://github.com/golang-standards/project-layout)
-### Note : Be sure to rename the name of module before beginning the project.
 ## How to start
 
 - install depedency
@@ -11,7 +10,7 @@ Project layout design influenced by [standard go project layout](https://github.
   # or
   go mod tidy
   ```
-- copy environment dev, test and set app_status=test for .env.test
+- make environment 
   ```bash
   make config
   #or
