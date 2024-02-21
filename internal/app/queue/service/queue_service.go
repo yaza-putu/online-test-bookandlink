@@ -123,6 +123,6 @@ func (q *queueService) Check() {
 	logger.New(err)
 
 	for _, v := range j {
-		q.EnqueueJob(Job{Email: v.Payload})
+		q.JobQueue <- Job{Email: v.Payload}
 	}
 }
