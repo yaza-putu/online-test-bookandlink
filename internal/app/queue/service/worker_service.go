@@ -84,6 +84,7 @@ func (w workerService) Start() {
 				// we assume we have sent the email
 				err = w.jobRepository.Delete(ctx, j.ID)
 				if err != nil {
+					logger.New(err)
 					cancel()
 				}
 
@@ -99,6 +100,7 @@ func (w workerService) Start() {
 
 				if err != nil {
 					w.Stop()
+					logger.New(err)
 				}
 
 				fmt.Printf("Worker %d send email to: %s done in %d ms\n", w.ID, job.Email, done)

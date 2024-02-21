@@ -18,6 +18,7 @@ func Api(r *echo.Echo) {
 			v1.PUT("/token", authhandler.Refresh)
 
 			v1.GET("/queue", queueHandler.Create)
+			v1.GET("/queue/re-check", queueHandler.Recheck)
 		}
 	}
 }

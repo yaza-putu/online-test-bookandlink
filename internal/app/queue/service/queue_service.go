@@ -14,6 +14,7 @@ type (
 		dispatch()          // send job to worker
 		EnqueueJob(job Job) // add job
 		Stop()              // stop queue
+		Check()             // check queue pending
 	}
 	Job struct {
 		Email string
@@ -114,4 +115,14 @@ func (q *queueService) Stop() {
 	go func() {
 		q.Quit <- true
 	}()
+}
+
+// Check all job pending
+func (q *queueService) Check() {
+	j, err := q.jobRepository.Pending(context.Background())
+	logger.New(err)
+
+	for _, v := range j {
+		q.EnqueueJob(Job{Email: v.Payload})
+	}
 }

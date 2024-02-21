@@ -14,6 +14,7 @@ type (
 		TakeOne(ctx context.Context, email string) (entity.Job, error)
 		Delete(ctx context.Context, id string) error
 		Update(ctx context.Context, id string, job entity.Job) error
+		Pending(ctx context.Context) (entity.Jobs, error)
 		All(ctx context.Context, page int, take int) (db.Pagination, error)
 	}
 	jobRepository struct{}
@@ -72,4 +73,13 @@ func (j *jobRepository) All(ctx context.Context, page int, take int) (db.Paginat
 	pagination.CalculatePage(float64(totalRow))
 
 	return pagination, r.Error
+}
+
+// Pending job
+func (j *jobRepository) Pending(ctx context.Context) (entity.Jobs, error) {
+	u := entity.Jobs{}
+
+	r := database.Instance.WithContext(ctx).Where("status = ?", entity.PENDING).Order("created_at asc").Find(&u)
+
+	return u, r.Error
 }

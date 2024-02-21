@@ -18,6 +18,7 @@ func NewQueueHandler() *queueHandler {
 	}
 }
 
+// Create job && run queue
 func (q *queueHandler) Create(ctx echo.Context) error {
 
 	q.queue.Run()
@@ -40,4 +41,13 @@ func (q *queueHandler) Create(ctx echo.Context) error {
 		response.SetCode(http.StatusOK),
 		response.SetMessage("Create job successfully")),
 	)
+}
+
+// Recheck job pending
+func (q *queueHandler) Recheck(ctx echo.Context) error {
+	q.queue.Run()
+
+	go q.queue.Check()
+
+	return ctx.JSON(http.StatusOK, response.Api(response.SetCode(http.StatusOK), response.SetMessage("Recheck job successfully")))
 }
