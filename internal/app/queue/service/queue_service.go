@@ -2,37 +2,39 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"github.com/yaza-putu/online-test-bookandlink/internal/app/queue/entity"
 	"github.com/yaza-putu/online-test-bookandlink/internal/app/queue/repository"
 	"github.com/yaza-putu/online-test-bookandlink/internal/pkg/logger"
 	"github.com/yaza-putu/online-test-bookandlink/pkg/unique"
-	"math"
-	"sync"
-	"time"
 )
 
 type (
 	Queue interface {
-		Add(ctx context.Context, jobs chan<- string, wg *sync.WaitGroup, email string) // add job to queue
-		DispatchWorkers(jobs <-chan string, wg *sync.WaitGroup)                        // dispatch worker
-		sendEmail(workerIndex int, email string)                                       // send email job
+		Run()               // run queue
+		dispatch()          // send job to worker
+		EnqueueJob(job Job) // add job
+		Stop()              // stop queue
+	}
+	Job struct {
+		Email string
 	}
 	queueService struct {
-		totalWorker         int
-		doneJobRepository   repository.DoneJob
-		jobRepository       repository.Job
-		failedJobRepository repository.FailedJob
+		WorkerPool    chan chan Job
+		MaxWorkers    int
+		JobQueue      chan Job
+		Quit          chan bool
+		jobRepository repository.Job
 	}
 	optFunc func(*queueService)
 )
 
 func defaultOption() queueService {
 	return queueService{
-		totalWorker:         10,
-		doneJobRepository:   repository.NewDoneJob(),
-		jobRepository:       repository.NewJob(),
-		failedJobRepository: repository.NewFailedJob(),
+		MaxWorkers:    10,
+		WorkerPool:    make(chan chan Job, 10),
+		JobQueue:      make(chan Job),
+		Quit:          make(chan bool),
+		jobRepository: repository.NewJob(),
 	}
 }
 
@@ -44,75 +46,72 @@ func NewQueue(opts ...optFunc) *queueService {
 	}
 
 	return &queueService{
-		totalWorker:         o.totalWorker,
-		doneJobRepository:   repository.NewDoneJob(),
-		jobRepository:       repository.NewJob(),
-		failedJobRepository: repository.NewFailedJob(),
+		MaxWorkers:    o.MaxWorkers,
+		WorkerPool:    o.WorkerPool,
+		JobQueue:      o.JobQueue,
+		Quit:          o.Quit,
+		jobRepository: repository.NewJob(),
 	}
 }
 
-func SetWorker(workers int) optFunc {
+func SetMaxWorker(workers int) optFunc {
 	return func(q *queueService) {
-		q.totalWorker = workers
+		q.MaxWorkers = workers
 	}
 }
 
 // Mock repository for unit testing
 func Mock(job repository.Job, doneJob repository.DoneJob, failedJob repository.FailedJob) optFunc {
 	return func(q *queueService) {
-		q.failedJobRepository = failedJob
 		q.jobRepository = job
-		q.doneJobRepository = doneJob
 	}
 }
 
-// Add job to queue & send to worker
-func (q *queueService) Add(ctx context.Context, jobs chan<- string, wg *sync.WaitGroup, email string) {
-	_, err := q.jobRepository.Add(ctx, entity.Job{
+// Run queue
+func (q *queueService) Run() {
+	for i := 0; i < q.MaxWorkers; i++ {
+		worker := NewWorker(i, q.WorkerPool)
+		worker.Start()
+	}
+
+	go q.dispatch()
+}
+
+// dispatch job to worker
+func (q *queueService) dispatch() {
+	for {
+		select {
+		case job := <-q.JobQueue:
+			go func(job Job) {
+				workerJobQueue := <-q.WorkerPool
+				workerJobQueue <- job
+			}(job)
+		case <-q.Quit:
+			return
+		}
+	}
+}
+
+// EnqueueJob in the queue
+func (q *queueService) EnqueueJob(job Job) {
+	_, err := q.jobRepository.Add(context.Background(), entity.Job{
 		ID:      unique.Uid(13),
-		Name:    "Send email to " + email,
-		Payload: email,
+		Name:    "Send email to " + job.Email,
+		Payload: job.Email,
 		Status:  entity.PENDING,
 	})
-	// send error to central logger handler
 	logger.New(err)
 
-	jobs <- email
-	wg.Add(1)
+	// if no error send to job queue
+	if err == nil {
+		q.JobQueue <- job
+	}
+
 }
 
-func (q *queueService) DispatchWorkers(jobs <-chan string, wg *sync.WaitGroup) {
-	for workerIndex := 1; workerIndex <= q.totalWorker; workerIndex++ {
-		go func(workerIndex int, jobs <-chan string, wg *sync.WaitGroup) {
-			for job := range jobs {
-				q.sendEmail(workerIndex, job)
-				wg.Done()
-			}
-		}(workerIndex, jobs, wg)
-	}
-}
-
-func (q *queueService) sendEmail(workerIndex int, email string) {
-	start := time.Now()
-	ctx := context.Background()
-	// send event websocket
-	job, err := q.jobRepository.TakeOne(ctx, email)
-	if err != nil {
-		logger.New(err)
-	} else {
-		// send email
-		// after success send email
-		err = q.jobRepository.Delete(ctx, job.ID)
-		logger.New(err)
-
-		// mark job to done
-		duration := time.Since(start)
-		_, err := q.doneJobRepository.Create(ctx, entity.DoneJob{
-			ID:          unique.Uid(13),
-			Name:        job.Name,
-			WorkerIndex: workerIndex,
-			Duration:    fmt.Sprintf("%d ms", int(math.Ceil(float64(duration.Milliseconds())))),
-		})
-		logger.New(err)
-	}
+// Stop queue
+func (q *queueService) Stop() {
+	go func() {
+		q.Quit <- true
+	}()
 }

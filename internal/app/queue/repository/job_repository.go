@@ -13,6 +13,7 @@ type (
 		Add(ctx context.Context, job entity.Job) (entity.Job, error)
 		TakeOne(ctx context.Context, email string) (entity.Job, error)
 		Delete(ctx context.Context, id string) error
+		Update(ctx context.Context, id string, job entity.Job) error
 		All(ctx context.Context, page int, take int) (db.Pagination, error)
 	}
 	jobRepository struct{}
@@ -42,6 +43,13 @@ func (j *jobRepository) TakeOne(ctx context.Context, email string) (entity.Job, 
 // Delete processed job
 func (j *jobRepository) Delete(ctx context.Context, id string) error {
 	r := database.Instance.WithContext(ctx).Where("id = ?", id).Delete(&entity.Job{})
+
+	return r.Error
+}
+
+// Update job
+func (j *jobRepository) Update(ctx context.Context, id string, job entity.Job) error {
+	r := database.Instance.WithContext(ctx).Where("id = ?", id).Updates(&job)
 
 	return r.Error
 }

@@ -1,13 +1,11 @@
 package handler
 
 import (
-	"context"
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/yaza-putu/online-test-bookandlink/internal/app/queue/service"
 	"github.com/yaza-putu/online-test-bookandlink/internal/http/response"
 	"net/http"
-	"sync"
 )
 
 type queueHandler struct {
@@ -16,25 +14,30 @@ type queueHandler struct {
 
 func NewQueueHandler() *queueHandler {
 	return &queueHandler{
-		queue: service.NewQueue(service.SetWorker(20)), // set number of worker
+		queue: service.NewQueue(service.SetMaxWorker(20)), // set number of worker
 	}
 }
 
 func (q *queueHandler) Create(ctx echo.Context) error {
-	jobs := make(chan string)
-	wg := new(sync.WaitGroup)
 
-	for i := 0; i < 100; i++ {
-		email := fmt.Sprintf("user%d@example.com", i+1)
-		go q.queue.Add(context.Background(), jobs, wg, email)
+	q.queue.Run()
+
+	var emails []string
+
+	// generate job
+	for i := 0; i < 1000; i++ {
+		emails = append(emails, fmt.Sprintf("user%d@example.com", i+1))
 	}
 
-	go q.queue.DispatchWorkers(jobs, wg)
-
-	wg.Wait()
+	// add job
+	go func(emails []string) {
+		for _, email := range emails {
+			q.queue.EnqueueJob(service.Job{Email: email})
+		}
+	}(emails)
 
 	return ctx.JSON(http.StatusOK, response.Api(
 		response.SetCode(http.StatusOK),
-		response.SetMessage("Send to queue successfully")),
+		response.SetMessage("Create job successfully")),
 	)
 }
