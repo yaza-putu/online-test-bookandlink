@@ -1,0 +1,7 @@
+bin
+build
+.idea
+.env
+.env.test
+logs
+zoro
