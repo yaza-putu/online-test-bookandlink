@@ -18,8 +18,9 @@ type (
 		TotalJobs int `json:"total_jobs" form:"total_jobs" validate:"required"`
 	}
 	paginationvalidation struct {
-		Page int `json:"page" query:"page"`
-		Take int `json:"take" query:"take"`
+		Page    int    `json:"page" query:"page" validate:"required"`
+		Take    int    `json:"take" query:"take" validate:"required"`
+		Keyword string `json:"q" query:"q"`
 	}
 )
 
@@ -97,8 +98,8 @@ func (q *queueHandler) Rollback(ctx echo.Context) error {
 	))
 }
 
-// Done jobs
-func (q *queueHandler) Done(ctx echo.Context) error {
+// AllJob
+func (q *queueHandler) AllJob(ctx echo.Context) error {
 	r := paginationvalidation{}
 	err := ctx.Bind(&r)
 	if err != nil {
@@ -111,45 +112,7 @@ func (q *queueHandler) Done(ctx echo.Context) error {
 		return ctx.JSON(http.StatusUnprocessableEntity, d)
 	}
 
-	res := q.queue.AllDoneJob(ctx.Request().Context(), r.Page, r.Take)
-
-	return ctx.JSON(res.Code, res)
-}
-
-// Failed jobs
-func (q *queueHandler) Failed(ctx echo.Context) error {
-	r := paginationvalidation{}
-	err := ctx.Bind(&r)
-	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, response.BadRequest(errors.New("Bad requests")))
-	}
-
-	// validation
-	d, err := request.Validation(&r)
-	if err != nil {
-		return ctx.JSON(http.StatusUnprocessableEntity, d)
-	}
-
-	res := q.queue.AllFailedJob(ctx.Request().Context(), r.Page, r.Take)
-
-	return ctx.JSON(res.Code, res)
-}
-
-// Pending jobs
-func (q *queueHandler) Pending(ctx echo.Context) error {
-	r := paginationvalidation{}
-	err := ctx.Bind(&r)
-	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, response.BadRequest(errors.New("Bad requests")))
-	}
-
-	// validation
-	d, err := request.Validation(&r)
-	if err != nil {
-		return ctx.JSON(http.StatusUnprocessableEntity, d)
-	}
-
-	res := q.queue.AllPendingJob(ctx.Request().Context(), r.Page, r.Take)
+	res := q.queue.AllJob(ctx.Request().Context(), r.Page, r.Take, r.Keyword)
 
 	return ctx.JSON(res.Code, res)
 }

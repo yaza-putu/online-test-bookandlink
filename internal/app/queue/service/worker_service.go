@@ -7,31 +7,26 @@ import (
 	"github.com/yaza-putu/online-test-bookandlink/internal/app/queue/entity"
 	"github.com/yaza-putu/online-test-bookandlink/internal/app/queue/repository"
 	"github.com/yaza-putu/online-test-bookandlink/internal/pkg/logger"
-	"github.com/yaza-putu/online-test-bookandlink/pkg/unique"
 	"gorm.io/gorm"
 	"math"
 	"time"
 )
 
 type workerService struct {
-	ID                  int
-	WorkerQueue         chan chan Job
-	JobQueue            chan Job
-	QuitChan            chan bool
-	jobRepository       repository.Job
-	failedJobRepository repository.FailedJob
-	doneJobRepository   repository.DoneJob
+	ID            int
+	WorkerQueue   chan chan Job
+	JobQueue      chan Job
+	QuitChan      chan bool
+	jobRepository repository.Job
 }
 
 func NewWorker(id int, workerQueue chan chan Job) *workerService {
 	return &workerService{
-		ID:                  id,
-		WorkerQueue:         workerQueue,
-		JobQueue:            make(chan Job),
-		QuitChan:            make(chan bool),
-		jobRepository:       repository.NewJob(),
-		failedJobRepository: repository.NewFailedJob(),
-		doneJobRepository:   repository.NewDoneJob(),
+		ID:            id,
+		WorkerQueue:   workerQueue,
+		JobQueue:      make(chan Job),
+		QuitChan:      make(chan bool),
+		jobRepository: repository.NewJob(),
 	}
 }
 
@@ -60,43 +55,30 @@ func (w workerService) Start() {
 						w.Stop()
 					} else {
 						// send to failed job
-						er := w.jobRepository.Delete(ctx, j.ID)
-						if err != nil {
-							logger.New(er)
-							cancel()
-						}
-
-						_, er = w.failedJobRepository.Create(ctx, entity.FailedJob{
-							ID:        unique.Uid(13),
-							Name:      j.Name,
-							Payload:   job.Email,
-							Exception: err.Error(),
-						})
+						j.Status = entity.FAILED
+						er := w.jobRepository.Update(ctx, j.ID, j)
 
 						if er != nil {
 							logger.New(er)
 							w.Stop()
+							cancel()
 						}
 
 					}
 				}
 
 				// we assume we have sent the email
-				err = w.jobRepository.Delete(ctx, j.ID)
+				duration := time.Since(start)
+				done := int(math.Ceil(float64(duration.Milliseconds())))
+
+				j.Status = entity.DONE
+				j.Duration = fmt.Sprintf("%d ms", done)
+				j.WorkerIndex = w.ID
+				err = w.jobRepository.Update(ctx, j.ID, j)
 				if err != nil {
 					logger.New(err)
 					cancel()
 				}
-
-				duration := time.Since(start)
-				done := int(math.Ceil(float64(duration.Milliseconds())))
-
-				_, err = w.doneJobRepository.Create(ctx, entity.DoneJob{
-					ID:          unique.Uid(13),
-					Name:        j.Name,
-					Duration:    fmt.Sprintf("%d ms", done),
-					WorkerIndex: w.ID,
-				})
 
 				if err != nil {
 					w.Stop()
