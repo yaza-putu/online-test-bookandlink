@@ -68,6 +68,9 @@ func (w workerService) Start() {
 				}
 
 				// we assume we have sent the email
+				// and add time sleep to make behavior real handling job
+				time.Sleep(time.Millisecond * 700)
+				// -------------------------------
 				duration := time.Since(start)
 				done := int(math.Ceil(float64(duration.Milliseconds())))
 
@@ -86,6 +89,11 @@ func (w workerService) Start() {
 				}
 
 				fmt.Printf("Worker %d send email to: %s done in %d ms\n", w.ID, job.Email, done)
+				if len(connections) > 0 {
+					broadcastMessage("monitor", fmt.Sprintf("Worker %d send email to: %s done in %d ms\n", w.ID, job.Email, done))
+					eventCountJob()
+					eventUpdateTable(1, 10, "")
+				}
 			case <-w.QuitChan:
 				// Exits a goroutine when it receives a signal to stop
 				return

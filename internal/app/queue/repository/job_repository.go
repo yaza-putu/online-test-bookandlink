@@ -18,6 +18,7 @@ type (
 		Pending(ctx context.Context) (entity.Jobs, error)
 		All(ctx context.Context, page int, take int, q string) (db.Pagination, error)
 		Rollback(ctx context.Context) error
+		CountJob() (int, int, int)
 	}
 	jobRepository struct{}
 )
@@ -107,4 +108,20 @@ func (f *jobRepository) Rollback(ctx context.Context) error {
 	})
 
 	return nil
+}
+
+// CountJob list
+// return param 1 int => pending
+// return param 2 int => done
+// return param 3 int => failed
+func (f *jobRepository) CountJob() (int, int, int) {
+	var p1 int64
+	var p2 int64
+	var p3 int64
+
+	database.Instance.Model(&entity.Job{}).Where("status = ?", entity.PENDING).Count(&p1)
+	database.Instance.Model(&entity.Job{}).Where("status = ?", entity.DONE).Count(&p2)
+	database.Instance.Model(&entity.Job{}).Where("status = ?", entity.FAILED).Count(&p3)
+
+	return int(p1), int(p2), int(p3)
 }

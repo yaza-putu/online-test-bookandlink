@@ -6,6 +6,7 @@ import (
 )
 
 var queueHandler = queue.NewQueueHandler()
+var wsHandler = queue.NewWsHandler()
 
 func Api(r *echo.Echo) {
 	route := r.Group("api")
@@ -18,5 +19,10 @@ func Api(r *echo.Echo) {
 
 			v1.GET("/jobs", queueHandler.AllJob)
 		}
+	}
+
+	wss := r.Group("/wss")
+	{
+		wss.GET("", wsHandler.Connect)
 	}
 }
