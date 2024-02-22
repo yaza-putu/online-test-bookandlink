@@ -20,6 +20,10 @@ func Api(r *echo.Echo) {
 			v1.POST("/queue", queueHandler.Create)
 			v1.GET("/queue/check", queueHandler.Recheck)
 			v1.GET("/queue/rollback", queueHandler.Rollback)
+
+			v1.GET("/jobs/done", queueHandler.Done)
+			v1.GET("/jobs/pending", queueHandler.Pending)
+			v1.GET("/jobs/failed", queueHandler.Failed)
 		}
 	}
 }
