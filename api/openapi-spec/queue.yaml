@@ -1,0 +1,126 @@
+openapi: 3.0.3
+info:
+  title: Queue
+  description: Queue
+  version: v1
+servers:
+  - url: 'http://localhost:5100/api/v1'
+    description: For local mode
+  - url: 'https://sandbox.domain.com/api/v1'
+    description: For staging mode
+  - url: 'https://domain.com/api/v1'
+    description: For production mode
+paths:
+  /queue:
+    post:
+      tags:
+        - Produce Queue
+      summary: "Generate job"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: ["total_jobs"]
+              properties:
+                total_jobs:
+                  type: number
+                  example: 1000
+          multipart/form-data:
+            schema:
+              type: object
+              required: [ "total_jobs" ]
+              properties:
+                total_jobs:
+                  type: number
+                  example: 1000
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Create job successfully"
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 422
+                  message:
+                    type: string
+                    example: "Unprocessable Content"
+                  errors:
+                    type: object
+                    example: {
+                      "totaljobs": [
+                        "TotalJobs is a required field"
+                      ]
+                    }
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "bad request"
+                  errors:
+                    type: object
+                    example:  {
+                      "message": "strconv.ParseInt: parsing \"s\": invalid syntax"
+                    }
+  /queue/rollback:
+    get:
+      tags:
+        - Rollback all failed job to queue
+      summary: "rollback failed job to queue"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Rollback all failed job to queue successfully"
+  /queue/check:
+    get:
+      tags:
+        - Check Pending job
+      summary: "Processing all pending job"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Recheck job successfully"

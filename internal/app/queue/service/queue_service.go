@@ -4,38 +4,48 @@ import (
 	"context"
 	"github.com/yaza-putu/online-test-bookandlink/internal/app/queue/entity"
 	"github.com/yaza-putu/online-test-bookandlink/internal/app/queue/repository"
+	"github.com/yaza-putu/online-test-bookandlink/internal/http/response"
 	"github.com/yaza-putu/online-test-bookandlink/internal/pkg/logger"
 	"github.com/yaza-putu/online-test-bookandlink/pkg/unique"
+	"net/http"
 )
 
 type (
 	Queue interface {
-		Run()               // run queue
-		dispatch()          // send job to worker
-		EnqueueJob(job Job) // add job
-		Stop()              // stop queue
-		Check()             // check queue pending
+		Run()                                                                   // run queue
+		dispatch()                                                              // send job to worker
+		EnqueueJob(job Job)                                                     // add job
+		Stop()                                                                  // stop queue
+		Check()                                                                 // check queue pending
+		Rollback(ctx context.Context) error                                     // rollback all failed job to queue
+		AllDoneJob(ctx context.Context, page int, take int) response.DataApi    // all done
+		AllPendingJob(ctx context.Context, page int, take int) response.DataApi // all pending
+		AllFailedJob(ctx context.Context, page int, take int) response.DataApi  // all failed
 	}
 	Job struct {
 		Email string
 	}
 	queueService struct {
-		WorkerPool    chan chan Job
-		MaxWorkers    int
-		JobQueue      chan Job
-		Quit          chan bool
-		jobRepository repository.Job
+		WorkerPool          chan chan Job
+		MaxWorkers          int
+		JobQueue            chan Job
+		Quit                chan bool
+		jobRepository       repository.Job
+		failedJobRepository repository.FailedJob
+		doneJobRepository   repository.DoneJob
 	}
 	optFunc func(*queueService)
 )
 
 func defaultOption() queueService {
 	return queueService{
-		MaxWorkers:    10,
-		WorkerPool:    make(chan chan Job, 10),
-		JobQueue:      make(chan Job),
-		Quit:          make(chan bool),
-		jobRepository: repository.NewJob(),
+		MaxWorkers:          10,
+		WorkerPool:          make(chan chan Job, 10),
+		JobQueue:            make(chan Job),
+		Quit:                make(chan bool),
+		jobRepository:       repository.NewJob(),
+		failedJobRepository: repository.NewFailedJob(),
+		doneJobRepository:   repository.NewDoneJob(),
 	}
 }
 
@@ -65,6 +75,8 @@ func SetMaxWorker(workers int) optFunc {
 func Mock(job repository.Job, doneJob repository.DoneJob, failedJob repository.FailedJob) optFunc {
 	return func(q *queueService) {
 		q.jobRepository = job
+		q.doneJobRepository = doneJob
+		q.failedJobRepository = failedJob
 	}
 }
 
@@ -125,4 +137,66 @@ func (q *queueService) Check() {
 	for _, v := range j {
 		q.JobQueue <- Job{Email: v.Payload}
 	}
+}
+
+// Rollback failed job to queue
+func (q *queueService) Rollback(ctx context.Context) error {
+	err := q.failedJobRepository.Rollback(ctx)
+
+	if err == nil {
+		go q.Check()
+	}
+
+	return err
+}
+
+// AllDoneJob
+func (q *queueService) AllDoneJob(ctx context.Context, page int, take int) response.DataApi {
+	r, err := q.doneJobRepository.All(ctx, page, take)
+	if err != nil {
+		return response.Api(
+			response.SetCode(http.StatusInternalServerError),
+			response.SetMessage("Internal server error"),
+			response.SetError(err),
+		)
+	}
+
+	return response.Api(
+		response.SetCode(http.StatusOK),
+		response.SetData(r),
+	)
+}
+
+// AllFailedJob
+func (q *queueService) AllFailedJob(ctx context.Context, page int, take int) response.DataApi {
+	r, err := q.failedJobRepository.All(ctx, page, take)
+	if err != nil {
+		return response.Api(
+			response.SetCode(http.StatusInternalServerError),
+			response.SetMessage("Internal server error"),
+			response.SetError(err),
+		)
+	}
+
+	return response.Api(
+		response.SetCode(http.StatusOK),
+		response.SetData(r),
+	)
+}
+
+// AllPendingJob
+func (q *queueService) AllPendingJob(ctx context.Context, page int, take int) response.DataApi {
+	r, err := q.jobRepository.All(ctx, page, take)
+	if err != nil {
+		return response.Api(
+			response.SetCode(http.StatusInternalServerError),
+			response.SetMessage("Internal server error"),
+			response.SetError(err),
+		)
+	}
+
+	return response.Api(
+		response.SetCode(http.StatusOK),
+		response.SetData(r),
+	)
 }
