@@ -135,10 +135,6 @@ func (q *queueService) Check() {
 func (q *queueService) Rollback(ctx context.Context) error {
 	err := q.jobRepository.Rollback(ctx)
 
-	if err == nil {
-		go q.Check()
-	}
-
 	return err
 }
 

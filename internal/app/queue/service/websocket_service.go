@@ -62,6 +62,7 @@ func handleIO(ctx echo.Context, currentConn *WsConn, connections []*WsConn) {
 	}
 
 	broadcastMessage("client_connect", len(connections))
+	eventUpdateTable(1, 10, "")
 	eventCountJob()
 
 	manageEvent(currentConn, ctx, payloadForMe)

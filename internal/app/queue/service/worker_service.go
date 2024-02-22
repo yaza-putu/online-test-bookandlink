@@ -69,7 +69,7 @@ func (w workerService) Start() {
 
 				// we assume we have sent the email
 				// and add time sleep to make behavior real handling job
-				time.Sleep(time.Millisecond * 700)
+				time.Sleep(time.Millisecond * 500)
 				// -------------------------------
 				duration := time.Since(start)
 				done := int(math.Ceil(float64(duration.Milliseconds())))

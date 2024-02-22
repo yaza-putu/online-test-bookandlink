@@ -92,6 +92,9 @@ func (q *queueHandler) Rollback(ctx echo.Context) error {
 		))
 	}
 
+	q.queue.Run()
+	go q.queue.Check()
+
 	return ctx.JSON(http.StatusOK, response.Api(
 		response.SetCode(http.StatusOK),
 		response.SetMessage("Rollback all failed job to queue successfully"),
