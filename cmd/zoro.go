@@ -5,7 +5,6 @@ import (
 	"github.com/yaza-putu/online-test-bookandlink/internal/core"
 	"github.com/yaza-putu/online-test-bookandlink/internal/database"
 	_ "github.com/yaza-putu/online-test-bookandlink/internal/database/migrations"
-	_ "github.com/yaza-putu/online-test-bookandlink/internal/database/seeders"
 	"github.com/yaza-putu/online-test-bookandlink/internal/pkg/logger"
 	"github.com/yaza-putu/online-test-bookandlink/pkg/unique"
 	"io"
@@ -178,7 +177,7 @@ func (z *zoroCommand) keyGenerate() bool {
 	passphrase := unique.Key(32)
 
 	fmt.Println("Generate key successfully")
-	fmt.Println("Please copy bellow to .env && .env.test")
+	fmt.Println("Please copy bellow to .env")
 	fmt.Println(fmt.Sprintf("key_token='%s' \nkey_refresh='%s' \nkey_passphrase='%s'", token, refresh, passphrase))
 	return true
 }

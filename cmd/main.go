@@ -17,7 +17,7 @@ func main() {
 	core.Database()
 
 	// redis
-	core.Redis()
+	//core.Redis()
 	// start server
 	core.HttpServe()
 }

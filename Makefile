@@ -5,15 +5,12 @@ run:
 	go run cmd/main.go
 
 config:
-	cp .env.example .env && cp .env.example .env.test
+	cp .env.example .env
 
 tidy:
 	go mod tidy
 key:
 	go run cmd/zoro.go key:generate
-
-gotest:
-	go test ./test/...
 
 migration:
 	go run cmd/zoro.go make:migration ${table}
