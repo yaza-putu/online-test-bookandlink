@@ -1,4 +1,8 @@
 # Online Test Bookandlink
+Real-time websocket connection monitoring for queues, together with the implementation of the FIFO worker pool pattern
+
+The job-handling simulation is 200 milliseconds.
+you can change in worker_service.go line 72
 ![golang](https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Go_Logo_Blue.svg/1200px-Go_Logo_Blue.svg.png)
 
 Project layout design influenced by [standard go project layout](https://github.com/golang-standards/project-layout)
