@@ -23,6 +23,7 @@ const (
 var (
 	connections = make([]*WsConn, 0)
 	mutex       sync.Mutex
+	pageNum     int
 )
 
 type (
@@ -86,7 +87,9 @@ func handleIO(ctx echo.Context, currentConn *WsConn, connections []*WsConn) {
 }
 
 func manageEvent(currentConn *WsConn, ctx echo.Context, wssReq SocketPayload) {
-
+	if wssReq.Event == "pagination" {
+		eventUpdateTable(int(wssReq.Data.(float64)), 10, "")
+	}
 }
 
 func broadcastMessage(kind string, data any) {
@@ -121,6 +124,7 @@ func eventCountJob() {
 }
 
 func eventUpdateTable(page int, take int, q string) {
+	pageNum = page
 	jobRepository := repository.NewJob()
 
 	data, err := jobRepository.All(context.Background(), page, take, q)

@@ -69,7 +69,7 @@ func (w workerService) Start() {
 
 				// we assume we have sent the email
 				// and add time sleep to make behavior real handling job
-				time.Sleep(time.Millisecond * 500)
+				time.Sleep(time.Millisecond * 200)
 				// -------------------------------
 				duration := time.Since(start)
 				done := int(math.Ceil(float64(duration.Milliseconds())))
@@ -92,7 +92,7 @@ func (w workerService) Start() {
 				if len(connections) > 0 {
 					broadcastMessage("monitor", fmt.Sprintf("Worker %d send email to: %s done in %d ms\n", w.ID, job.Email, done))
 					eventCountJob()
-					eventUpdateTable(1, 10, "")
+					eventUpdateTable(pageNum, 10, "")
 					eventWorkerLog(fmt.Sprintf("Worker %d send email to: %s done in %d ms\n", w.ID, job.Email, done))
 				}
 			case <-w.QuitChan:
