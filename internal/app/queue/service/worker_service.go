@@ -93,6 +93,7 @@ func (w workerService) Start() {
 					broadcastMessage("monitor", fmt.Sprintf("Worker %d send email to: %s done in %d ms\n", w.ID, job.Email, done))
 					eventCountJob()
 					eventUpdateTable(1, 10, "")
+					eventWorkerLog(fmt.Sprintf("Worker %d send email to: %s done in %d ms\n", w.ID, job.Email, done))
 				}
 			case <-w.QuitChan:
 				// Exits a goroutine when it receives a signal to stop

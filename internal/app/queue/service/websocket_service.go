@@ -129,3 +129,7 @@ func eventUpdateTable(page int, take int, q string) {
 		broadcastMessage(TABLE, data)
 	}
 }
+
+func eventWorkerLog(msg string) {
+	broadcastMessage("worker_log", msg)
+}
