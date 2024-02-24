@@ -55,13 +55,14 @@ func NewQueue(opts ...optFunc) *queueService {
 		WorkerPool:    o.WorkerPool,
 		JobQueue:      o.JobQueue,
 		Quit:          o.Quit,
-		jobRepository: repository.NewJob(),
+		jobRepository: o.jobRepository,
 	}
 }
 
 func SetMaxWorker(workers int) optFunc {
 	return func(q *queueService) {
 		q.MaxWorkers = workers
+		q.WorkerPool = make(chan chan Job, workers)
 	}
 }
 

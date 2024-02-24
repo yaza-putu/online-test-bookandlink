@@ -26,7 +26,7 @@ type (
 
 func NewQueueHandler() *queueHandler {
 	return &queueHandler{
-		queue: service.NewQueue(service.SetMaxWorker(20)), // set number of worker
+		queue: service.NewQueue(service.SetMaxWorker(10)), // set number of worker
 	}
 }
 
